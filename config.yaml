@@ -1,0 +1,76 @@
+# DexScreener Bot Configuration
+# Fill in your secrets. Never commit real tokens.
+
+# --- APIs ---
+dexscreener:
+  base_url: "https://api.dexscreener.com"
+  chain: "solana"
+  poll_interval_seconds: 60          # how often to scan for new / interesting pairs
+  rate_limit_delay: 0.25             # seconds between requests (stay under 300/min)
+
+rugcheck:
+  base_url: "https://api.rugcheck.xyz"
+  only_good: true                    # only proceed if riskLevel == "Good"
+  reject_on_bundle: true             # blacklist if bundle / high concentration detected
+
+# Pocket Universe style fake-volume heuristic (no public API; we approximate)
+fake_volume:
+  enabled: true
+  # Heuristics: high volume with very low unique makers or extreme buy/sell imbalance
+  min_volume_usd_for_check: 50000
+  max_unique_makers_ratio: 0.05      # if unique txns / volume too low → suspicious
+  extreme_buy_sell_ratio: 0.95       # >95% buys or sells → possible wash
+
+# --- Filters (applied before deep checks) ---
+filters:
+  min_liquidity_usd: 8000
+  min_volume_24h_usd: 15000
+  min_market_cap_usd: 0
+  max_market_cap_usd: 5000000
+  max_age_minutes: 180               # only consider pairs younger than this
+  require_socials: false
+
+# --- Blacklists (JSON files, auto-created) ---
+blacklists:
+  coins_file: "data/coin_blacklist.json"
+  devs_file: "data/dev_blacklist.json"
+  auto_add_fake_volume: true
+  auto_add_bundles: true
+  auto_add_rugs: true
+
+# --- Analysis thresholds ---
+analysis:
+  rug_price_drop_1h_pct: -40         # < -40% in 1h + low liq → rug signal
+  pump_price_rise_1h_pct: 80         # > +80% in 1h + volume → pump signal
+  save_all_new_pairs: true
+  save_rugs: true
+  save_pumps: true
+
+# --- Trading via Bonkbot (Telegram) ---
+telegram:
+  enabled: true
+  bot_token: "YOUR_TELEGRAM_BOT_TOKEN"          # BotFather token of YOUR bot
+  chat_id: "YOUR_CHAT_ID"                       # where you want notifications + commands
+  # How to trade: send a message that Bonkbot understands.
+  # Common pattern: paste the mint address (Bonkbot auto-detects) or use /buy
+  buy_command_template: "{mint}"                # just the CA is often enough
+  # Alternative examples:
+  # buy_command_template: "/buy {mint} 0.1"
+  # buy_command_template: "buy {mint} 0.05 SOL"
+  default_buy_sol: 0.05
+  notify_on_buy: true
+  notify_on_sell: true
+  notify_on_rug: true
+  notify_on_pump: true
+  notify_on_blacklist: true
+
+# --- Storage ---
+storage:
+  db_file: "data/tokens.db"
+  analysis_jsonl: "data/analysis.jsonl"
+
+# --- Runtime ---
+runtime:
+  dry_run: true                      # true = never send real buy commands
+  max_pairs_per_cycle: 30
+  log_level: "INFO"
